@@ -1,0 +1,20 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: morgans-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend-data:/data
+    networks:
+      - morgans-network
+
+volumes:
+  backend-data:
+    driver: local
+
+networks:
+  morgans-network:
+    driver: bridge

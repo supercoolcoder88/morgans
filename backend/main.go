@@ -14,7 +14,7 @@ func main() {
 	//mux := http.NewServeMux()
 
 	// Initialise the database
-	db, err := sql.Open("sqlite3", "./morgans.db")
+	db, err := sql.Open("sqlite3", "/data/morgans.db")
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
