@@ -29,7 +29,6 @@ func main() {
 	service := articles.NewService(db)
 
 	// Run FetchArticles immediately
-	log.Println("Fetching articles...")
 	if err := service.FetchArticles(); err != nil {
 		log.Printf("Error fetching articles: %v", err)
 	} else {
@@ -43,7 +42,6 @@ func main() {
 	log.Println("Starting article fetcher (runs every 4 hours)")
 
 	for range ticker.C {
-		log.Println("Fetching articles...")
 		if err := service.FetchArticles(); err != nil {
 			log.Printf("Error fetching articles: %v", err)
 		} else {

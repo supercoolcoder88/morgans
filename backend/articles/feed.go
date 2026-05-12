@@ -15,11 +15,12 @@ type feedItem struct {
 }
 
 func readRSSFeed(source string, url string) []feedItem {
+	log.Printf("Reading feed from %s", source)
 	fp := gofeed.NewParser()
 
 	feed, _ := fp.ParseURL(url)
 
-	log.Printf("number of links: %v", feed.Len())
+	log.Printf("number of articles read: %v", feed.Len())
 
 	feedItems := []feedItem{}
 

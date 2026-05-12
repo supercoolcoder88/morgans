@@ -3,6 +3,7 @@ package articles
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 
 	llama "github.com/supercoolcoder88/llamacpp-go"
 )
@@ -30,6 +31,7 @@ func NewService(db *sql.DB) *service {
 }
 
 func (s *service) FetchArticles() error {
+	log.Print("Fetching articles")
 	articles := make(map[string]feedItem)
 
 	// Fetch all the articles for each source
@@ -69,7 +71,7 @@ func (s *service) FetchArticles() error {
 
 func filterArticles(items map[string]feedItem) ([]string, error) {
 	client := llama.New("http://localhost:9090") // Put this in env variable
-
+	log.Print("Querying llama.cpp")
 	// Build messages
 	system := llama.Message{
 		Role: "system",
@@ -110,5 +112,6 @@ func filterArticles(items map[string]feedItem) ([]string, error) {
 		return nil, err
 	}
 
+	log.Printf("llm returned %v IDs", len(filteredIds.ids))
 	return filteredIds.ids, nil
 }
