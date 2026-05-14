@@ -22,6 +22,8 @@ COPY --from=builder /app/main .
 
 RUN mkdir -p /data
 
+ENV PORT=8000
+
 EXPOSE 8000
 
 CMD ["./main"]

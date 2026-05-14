@@ -30,7 +30,7 @@ func NewService(db *sql.DB) *service {
 	}
 }
 
-func (s *service) FetchArticles() error {
+func (s *service) ReadArticlesFromRSSFeeds() error {
 	log.Print("Fetching articles")
 	articles := make(map[string]feedItem)
 
@@ -67,6 +67,17 @@ func (s *service) FetchArticles() error {
 	}
 
 	return nil
+}
+
+func (s *service) FetchArticlesToday() ([]Article, error) {
+	store := NewArticlesStore(s.db)
+	articles, err := store.GetAllArticlesToday()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return articles, nil
 }
 
 func filterArticles(items map[string]feedItem) ([]string, error) {
