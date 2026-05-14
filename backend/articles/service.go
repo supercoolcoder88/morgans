@@ -62,7 +62,8 @@ func (s *service) ReadArticlesFromRSSFeeds() error {
 	// Pass results from AI to database
 	store := NewArticlesStore(s.db)
 
-	for _, article := range articles {
+	log.Printf("Adding %v items", len(filteredItems))
+	for _, article := range filteredItems {
 		store.AddArticle(article.GUID, article.Source, article.Title, article.Link, article.Description)
 	}
 
