@@ -9,12 +9,11 @@ services:
     volumes:
       - backend-data:/data
     networks:
-      - morgans-network
+      - shared-services
 
 volumes:
   backend-data:
-    driver: local
 
 networks:
-  morgans-network:
-    driver: bridge
+  shared-services:
+    external: true
