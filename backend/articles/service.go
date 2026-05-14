@@ -81,7 +81,7 @@ func (s *service) FetchArticlesToday() ([]Article, error) {
 }
 
 func filterArticles(items map[string]feedItem) ([]string, error) {
-	client := llama.New("http://localhost:9090") // Put this in env variable
+	client := llama.New("http://llama-cpp-server:9090")
 	log.Print("Querying llama.cpp")
 	// Build messages
 	system := llama.Message{

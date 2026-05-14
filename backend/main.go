@@ -36,7 +36,7 @@ func main() {
 
 	// Run FetchArticles immediately
 	if err := service.ReadArticlesFromRSSFeeds(); err != nil {
-		log.Printf("Error fetching articles: %v", err)
+		log.Printf("Error reading articles: %v", err)
 	} else {
 		log.Println("Successfully fetched articles")
 	}
@@ -53,9 +53,9 @@ func main() {
 
 		for range ticker.C {
 			if err := service.ReadArticlesFromRSSFeeds(); err != nil {
-				log.Printf("Error fetching articles: %v", err)
+				log.Printf("Error reading articles: %v", err)
 			} else {
-				log.Println("Successfully fetched articles")
+				log.Println("Successfully read articles from rss feeds")
 			}
 		}
 	}()
