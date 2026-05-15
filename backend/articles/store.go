@@ -17,10 +17,9 @@ func NewArticlesStore(db *sql.DB) *articlesStore {
 }
 
 type Article struct {
-	ID          string `json:"id"`
+	Link        string `json:"link"`
 	Source      string `json:"source"`
 	Title       string `json:"title"`
-	Link        string `json:"link"`
 	Description string `json:"description"`
 	AddedDate   string `json:"addedDate"`
 	IsRead      bool   `json:"isRead"`
@@ -29,7 +28,7 @@ type Article struct {
 func (s *articlesStore) GetAllArticlesToday() ([]Article, error) {
 	today := time.Now().Format("2006-01-02")
 
-	query := `SELECT id, source, title, link, description, addedDate, isRead
+	query := `SELECT link, source, title, description, addedDate, isRead
 		FROM Article
 		WHERE DATE(addedDate) = ?`
 
@@ -45,10 +44,9 @@ func (s *articlesStore) GetAllArticlesToday() ([]Article, error) {
 		var article Article
 
 		err := rows.Scan(
-			&article.ID,
+			&article.Link,
 			&article.Source,
 			&article.Title,
-			&article.Link,
 			&article.Description,
 			&article.AddedDate,
 			&article.IsRead,
@@ -67,18 +65,17 @@ func (s *articlesStore) GetAllArticlesToday() ([]Article, error) {
 	return articles, nil
 }
 
-func (s *articlesStore) GetArticle(id string) (*Article, error) {
-	query := `SELECT id, source, title, link, description, addedDate, isRead
+func (s *articlesStore) GetArticle(link string) (*Article, error) {
+	query := `SELECT link, source, title, description, addedDate, isRead
 		FROM Article
-		WHERE id = ?`
+		WHERE link = ?`
 
 	var article Article
 
-	err := s.db.QueryRow(query, id).Scan(
-		&article.ID,
+	err := s.db.QueryRow(query, link).Scan(
+		&article.Link,
 		&article.Source,
 		&article.Title,
-		&article.Link,
 		&article.Description,
 		&article.AddedDate,
 		&article.IsRead,
@@ -95,10 +92,10 @@ func (s *articlesStore) GetArticle(id string) (*Article, error) {
 	return &article, nil
 }
 
-func (s *articlesStore) UpdateIsRead(id string, isRead bool) error {
-	query := `UPDATE Article SET isRead = ? WHERE id = ?`
+func (s *articlesStore) UpdateIsRead(link string, isRead bool) error {
+	query := `UPDATE Article SET isRead = ? WHERE link = ?`
 
-	result, err := s.db.Exec(query, isRead, id)
+	result, err := s.db.Exec(query, isRead, link)
 	if err != nil {
 		return fmt.Errorf("error updating article: %w", err)
 	}
@@ -115,11 +112,11 @@ func (s *articlesStore) UpdateIsRead(id string, isRead bool) error {
 	return nil
 }
 
-func (s *articlesStore) AddArticle(id, source, title, link, description string) error {
-	query := `INSERT OR IGNORE INTO Article (id, source, title, link, description)
-		VALUES (?, ?, ?, ?, ?)`
+func (s *articlesStore) AddArticle(link, source, title, description string) error {
+	query := `INSERT OR IGNORE INTO Article (link, source, title, description)
+		VALUES (?, ?, ?, ?)`
 
-	_, err := s.db.Exec(query, id, source, title, link, description)
+	_, err := s.db.Exec(query, link, source, title, description)
 	if err != nil {
 		return fmt.Errorf("error inserting article: %w", err)
 	}

@@ -13,7 +13,12 @@ type service struct {
 }
 
 type filterResponse struct {
-	ids []string
+	IDs []int `json:"ids"`
+}
+
+type feedItemForLLM struct {
+	Title       string `json:"t"`
+	Description string `json:"d"`
 }
 
 var sources = map[string]string{
@@ -32,30 +37,33 @@ func NewService(db *sql.DB) *service {
 
 func (s *service) ReadArticlesFromRSSFeeds() error {
 	log.Print("Fetching articles")
-	articles := make(map[string]feedItem)
+	articles := make(map[int]feedItem)
+	counter := 0 // using counter so that llm can link articles
 
 	// Fetch all the articles for each source
 	for source, url := range sources {
 		items := readRSSFeed(source, url)
 
 		for _, item := range items {
-			articles[item.GUID] = item
+			articles[counter] = item
+			counter++
 		}
 	}
-
+	articleToFilter := formatFeedItemsForLLM(articles)
 	// Pass the articles to AI for filtering
-	ids, err := filterArticles(articles)
+	ids, err := filterArticles(articleToFilter)
+
 	if err != nil {
 		return err
 	}
 
-	// Filter out the valid GUIDs
+	// Filter out the valid IDs
 	var filteredItems []feedItem
 	for _, id := range ids {
-		_, exists := articles[id]
+		item, exists := articles[id]
 
 		if exists {
-			filteredItems = append(filteredItems, articles[id])
+			filteredItems = append(filteredItems, item)
 		}
 	}
 
@@ -64,7 +72,7 @@ func (s *service) ReadArticlesFromRSSFeeds() error {
 
 	log.Printf("Adding %v items", len(filteredItems))
 	for _, article := range filteredItems {
-		store.AddArticle(article.GUID, article.Source, article.Title, article.Link, article.Description)
+		store.AddArticle(article.Link, article.Source, article.Title, article.Description)
 	}
 
 	return nil
@@ -81,7 +89,18 @@ func (s *service) FetchArticlesToday() ([]Article, error) {
 	return articles, nil
 }
 
-func filterArticles(items map[string]feedItem) ([]string, error) {
+func formatFeedItemsForLLM(items map[int]feedItem) map[int]feedItemForLLM {
+	formatted := make(map[int]feedItemForLLM)
+	for id, item := range items {
+		formatted[id] = feedItemForLLM{
+			Title:       item.Title,
+			Description: item.Description,
+		}
+	}
+	return formatted
+}
+
+func filterArticles(items map[int]feedItemForLLM) ([]int, error) {
 	client := llama.New("http://llama-cpp-server:9090")
 	log.Print("Querying llama.cpp")
 	// Build messages
@@ -97,7 +116,7 @@ func filterArticles(items map[string]feedItem) ([]string, error) {
 			Return ONLY valid JSON.
 			Schema:
 			{
-			"ids": ["guid1", "guid2", "guid3"]
+			"ids": [0, 1, 2, 3]
 			}
 			Do not include explanations, markdown, or extra text.`,
 	}
@@ -124,6 +143,6 @@ func filterArticles(items map[string]feedItem) ([]string, error) {
 		return nil, err
 	}
 
-	log.Printf("llm returned %v IDs", len(filteredIds.ids))
-	return filteredIds.ids, nil
+	log.Printf("llm returned %v ids", len(filteredIds.IDs))
+	return filteredIds.IDs, nil
 }
