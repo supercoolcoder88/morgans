@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
+	"time"
 
 	llama "github.com/supercoolcoder88/llamacpp-go"
 )
@@ -131,11 +132,15 @@ func filterArticles(items map[int]feedItemForLLM) ([]int, error) {
 		Content: string(j),
 	}
 
+	start := time.Now()
 	res, err := client.ChatJSON("llama.cpp", []llama.Message{system, user})
+	duration := time.Since(start)
 
 	if err != nil {
 		return nil, err
 	}
+
+	log.Printf("LLM query took %v", duration)
 
 	var filteredIds filterResponse
 
