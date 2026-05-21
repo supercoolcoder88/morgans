@@ -1,8 +1,7 @@
 export interface Article {
-  id: string;
+  link: string;
   source: string;
   title: string;
-  link: string;
   description: string;
   addedDate: string;
   isRead: boolean;

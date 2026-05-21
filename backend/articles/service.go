@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
+	"strconv"
 	"time"
 
 	llama "github.com/supercoolcoder88/llamacpp-go"
@@ -13,8 +14,8 @@ type service struct {
 	db *sql.DB
 }
 
-type filterResponse struct {
-	IDs []int `json:"ids"`
+type filterResponseRaw struct {
+	IDs []json.Number `json:"ids"`
 }
 
 type feedItemForLLM struct {
@@ -90,6 +91,11 @@ func (s *service) FetchArticlesToday() ([]Article, error) {
 	return articles, nil
 }
 
+func (s *service) UpdateArticleIsRead(link string, isRead bool) error {
+	store := NewArticlesStore(s.db)
+	return store.UpdateIsRead(link, isRead)
+}
+
 func formatFeedItemsForLLM(items map[int]feedItem) map[int]feedItemForLLM {
 	formatted := make(map[int]feedItemForLLM)
 	for id, item := range items {
@@ -142,12 +148,22 @@ func filterArticles(items map[int]feedItemForLLM) ([]int, error) {
 
 	log.Printf("LLM query took %v", duration)
 
-	var filteredIds filterResponse
+	var raw filterResponseRaw
 
-	if err := json.Unmarshal([]byte(res), &filteredIds); err != nil {
+	if err := json.Unmarshal([]byte(res), &raw); err != nil {
 		return nil, err
 	}
 
-	log.Printf("llm returned %v ids", len(filteredIds.IDs))
-	return filteredIds.IDs, nil
+	var ids []int
+	for _, n := range raw.IDs {
+		id, err := strconv.Atoi(n.String())
+		if err != nil {
+			log.Printf("skipping invalid id %q: %v", n, err)
+			continue
+		}
+		ids = append(ids, id)
+	}
+
+	log.Printf("llm returned %v ids", len(ids))
+	return ids, nil
 }

@@ -30,16 +30,10 @@ func main() {
 	// Create the articles handler and register routes
 	handler := articles.NewHandler(db)
 	mux.HandleFunc("GET /articles", handler.GetArticles)
+	mux.HandleFunc("PATCH /articles", handler.UpdateIsRead)
 
 	// Create the articles service
 	service := articles.NewService(db)
-
-	// Run FetchArticles immediately
-	if err := service.ReadArticlesFromRSSFeeds(); err != nil {
-		log.Printf("Error reading articles: %v", err)
-	} else {
-		log.Println("Successfully fetched articles")
-	}
 
 	// Start HTTP server in a goroutine
 	port := os.Getenv("PORT")
@@ -47,7 +41,14 @@ func main() {
 		port = "8000"
 	}
 
+	// Run FetchArticles in a goroutine so the server starts immediately
 	go func() {
+		if err := service.ReadArticlesFromRSSFeeds(); err != nil {
+			log.Printf("Error reading articles: %v", err)
+		} else {
+			log.Println("Successfully fetched articles")
+		}
+
 		ticker := time.NewTicker(4 * time.Hour)
 		defer ticker.Stop()
 

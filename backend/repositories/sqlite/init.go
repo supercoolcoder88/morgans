@@ -9,14 +9,12 @@ import (
 func Init(db *sql.DB) error {
 	createArticlesTable := `
 	CREATE TABLE IF NOT EXISTS Article (
-		id TEXT,
+		link TEXT PRIMARY KEY,
 		source TEXT,
 		title TEXT,
-		link TEXT,
 		description TEXT,
 		addedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
-		isRead BOOLEAN DEFAULT 0,
-		PRIMARY KEY (id, source)
+		isRead BOOLEAN DEFAULT 0
 	);`
 
 	_, err := db.Exec(createArticlesTable)
