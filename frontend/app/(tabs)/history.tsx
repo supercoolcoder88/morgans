@@ -11,13 +11,13 @@ import { Article } from '../types/articles';
 
 const API_URL = 'http://egghead:8000';
 
-export default function IndexScreen() {
+export default function HistoryScreen() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${API_URL}/articles?time=today`)
+    fetch(`${API_URL}/articles`)
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch articles');
         return res.json();
@@ -34,12 +34,16 @@ export default function IndexScreen() {
   }, []);
 
   const sections = useMemo(() => {
-    const unread = articles.filter((a) => !a.isRead);
-    const read = articles.filter((a) => a.isRead);
-    const result = [];
-    if (unread.length > 0) result.push({ title: 'Unread', data: unread });
-    if (read.length > 0) result.push({ title: 'Read', data: read });
-    return result;
+    const grouped: Record<string, Article[]> = {};
+    for (const article of articles) {
+      const date = article.addedDate.split('T')[0] ?? article.addedDate.split(' ')[0];
+      if (!grouped[date]) grouped[date] = [];
+      grouped[date].push(article);
+    }
+
+    return Object.entries(grouped)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([date, data]) => ({ title: date, data }));
   }, [articles]);
 
   if (loading) {
@@ -61,7 +65,7 @@ export default function IndexScreen() {
   if (articles.length === 0) {
     return (
       <View className="flex-1 items-center justify-center">
-        <Text className="text-gray-500">No articles today</Text>
+        <Text className="text-gray-500">No articles found</Text>
       </View>
     );
   }
@@ -98,7 +102,12 @@ export default function IndexScreen() {
           onPress={() => handleArticlePress(item)}
           className="py-3 border-b border-gray-200"
         >
-          <Text className="text-base text-blue-600">{item.title}</Text>
+          <Text
+            className={`text-base ${item.isRead ? 'text-gray-400' : 'text-blue-600'}`}
+          >
+            {item.title}
+          </Text>
+          <Text className="text-xs text-gray-400 mt-1">{item.source}</Text>
         </Pressable>
       )}
     />

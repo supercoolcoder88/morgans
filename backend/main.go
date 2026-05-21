@@ -35,7 +35,6 @@ func main() {
 	// Create the articles service
 	service := articles.NewService(db)
 
-	// Start HTTP server in a goroutine
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8000"

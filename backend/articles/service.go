@@ -44,7 +44,11 @@ func (s *service) ReadArticlesFromRSSFeeds() error {
 
 	// Fetch all the articles for each source
 	for source, url := range sources {
-		items := readRSSFeed(source, url)
+		items, err := readRSSFeed(source, url)
+		if err != nil {
+			log.Printf("Error reading feed %s: %v", source, err)
+			continue
+		}
 
 		for _, item := range items {
 			articles[counter] = item
@@ -80,9 +84,9 @@ func (s *service) ReadArticlesFromRSSFeeds() error {
 	return nil
 }
 
-func (s *service) FetchArticlesToday() ([]Article, error) {
+func (s *service) FetchArticles(todayOnly bool) ([]Article, error) {
 	store := NewArticlesStore(s.db)
-	articles, err := store.GetAllArticlesToday()
+	articles, err := store.GetArticles(todayOnly)
 
 	if err != nil {
 		return nil, err
@@ -114,16 +118,15 @@ func filterArticles(items map[int]feedItemForLLM) ([]int, error) {
 	system := llama.Message{
 		Role: "system",
 		Content: `You are a JSON API,
-			Look through the provided items and select only items related to:
+			Given a list of items, return the IDs of items related to one or more of these topics:
 			- Software technology
 			- Programming
 			- Finance
-			- AI
-			- Important political news
+			- Artificial intelligence
 			Return ONLY valid JSON.
 			Schema:
 			{
-			"ids": [0, 1, 2, 3]
+			"ids": [0, 1, 2, 3...]
 			}
 			Do not include explanations, markdown, or extra text.`,
 	}

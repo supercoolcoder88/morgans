@@ -25,14 +25,25 @@ type Article struct {
 	IsRead      bool   `json:"isRead"`
 }
 
-func (s *articlesStore) GetAllArticlesToday() ([]Article, error) {
-	today := time.Now().Format("2006-01-02")
+func (s *articlesStore) GetArticles(todayOnly bool) ([]Article, error) {
+	var query string
+	var rows *sql.Rows
+	var err error
 
-	query := `SELECT link, source, title, description, addedDate, isRead
-		FROM Article
-		WHERE DATE(addedDate) = ?`
+	if todayOnly {
+		today := time.Now().Format("2006-01-02")
+		query = `SELECT link, source, title, description, addedDate, isRead
+			FROM Article
+			WHERE DATE(addedDate) = ?
+			ORDER BY addedDate DESC`
+		rows, err = s.db.Query(query, today)
+	} else {
+		query = `SELECT link, source, title, description, addedDate, isRead
+			FROM Article
+			ORDER BY addedDate DESC`
+		rows, err = s.db.Query(query)
+	}
 
-	rows, err := s.db.Query(query, today)
 	if err != nil {
 		return nil, fmt.Errorf("error querying articles: %w", err)
 	}

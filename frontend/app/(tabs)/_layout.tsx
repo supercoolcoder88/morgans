@@ -9,6 +9,12 @@ export default function TabLayout() {
           title: 'Home',
         }}
       />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: 'History',
+        }}
+      />
     </Tabs>
   );
 }
