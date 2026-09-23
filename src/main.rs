@@ -12,26 +12,40 @@ struct MemoryStats {
 }
 
 impl MemoryStats {
-    fn empty() -> MemoryStats {
-        MemoryStats {
+    pub fn fetch() -> Result<MemoryStats, Box<dyn std::error::Error>> {
+        let memory_info_file = File::open("/proc/meminfo")?;
+
+        let reader = BufReader::new(memory_info_file);
+        let mut memory_stats = MemoryStats {
             total_memory: 0,
             available_memory: 0,
             total_swap: 0,
             free_swap: 0,
             cached: 0,
-        }
-    }
+        };
 
-    fn parse(&mut self, key: &str, value: &str) {
-        let number: u64 = value.split_whitespace().next().unwrap().parse().unwrap();
-        match key {
-            "MemTotal" => self.total_memory = number,
-            "MemAvailable" => self.available_memory = number,
-            "SwapTotal" => self.total_swap = number,
-            "SwapFree" => self.free_swap = number,
-            "Cached" => self.cached = number,
-            _ => (),
+        for line in reader.lines() {
+            let line = line?;
+
+            if let Some((key, value)) = line.split_once(":") {
+                let number: u64 = value.split_whitespace().next().unwrap().parse().unwrap();
+                match key {
+                    "MemTotal" => memory_stats.total_memory = number,
+                    "MemAvailable" => memory_stats.available_memory = number,
+                    "SwapTotal" => memory_stats.total_swap = number,
+                    "SwapFree" => memory_stats.free_swap = number,
+                    "Cached" => memory_stats.cached = number,
+                    _ => (),
+                }
+            }
         }
+
+        assert!(
+            memory_stats.total_memory > 0,
+            "total memory available not parsed correct"
+        );
+
+        Ok(memory_stats)
     }
 }
 
@@ -46,8 +60,10 @@ struct CPUStats {
 }
 
 impl CPUStats {
-    fn empty() -> CPUStats {
-        CPUStats {
+    pub fn fetch() -> Result<CPUStats, Box<dyn std::error::Error>> {
+        let cpu_info_file = File::open("/proc/stat")?;
+        let mut cpu_reader = BufReader::new(cpu_info_file);
+        let mut cpu_stats = CPUStats {
             idle: 0,
             io_wait: 0,
             user: 0,
@@ -55,21 +71,22 @@ impl CPUStats {
             system: 0,
             irq: 0,
             softirq: 0,
-        }
-    }
+        };
+        let mut line = String::new();
 
-    fn parse(&mut self, line: &str) {
+        cpu_reader.read_line(&mut line)?;
+
         let mut values = line.split_whitespace();
-        values.next(); // skip "cpu"
+        values.next();
 
         let fields = [
-            &mut self.user,
-            &mut self.nice,
-            &mut self.system,
-            &mut self.idle,
-            &mut self.io_wait,
-            &mut self.irq,
-            &mut self.softirq,
+            &mut cpu_stats.user,
+            &mut cpu_stats.nice,
+            &mut cpu_stats.system,
+            &mut cpu_stats.idle,
+            &mut cpu_stats.io_wait,
+            &mut cpu_stats.irq,
+            &mut cpu_stats.softirq,
         ];
 
         for (field, value) in fields.into_iter().zip(values) {
@@ -77,39 +94,17 @@ impl CPUStats {
                 *field = value;
             }
         }
+
+        assert!(cpu_stats.user > 0, "CPU stats not parsed correctly");
+
+        Ok(cpu_stats)
     }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let memory_info_file = File::open("/proc/meminfo")?;
-
-    let reader = BufReader::new(memory_info_file);
-    let mut memory_stats = MemoryStats::empty();
-
-    for line in reader.lines() {
-        let line = line?;
-
-        if let Some((key, value)) = line.split_once(":") {
-            memory_stats.parse(key, value);
-        }
-    }
-
-    println!(
-        "total_memory: {}, available_memory: {}, total_swap: {}, free_swap: {}, cached: {}",
-        memory_stats.total_memory,
-        memory_stats.available_memory,
-        memory_stats.total_swap,
-        memory_stats.free_swap,
-        memory_stats.cached,
-    );
-
-    let cpu_info_file = File::open("/proc/stat")?;
-    let mut cpu_reader = BufReader::new(cpu_info_file);
-    let mut cpu_stats = CPUStats::empty();
-    let mut line = String::new();
-
-    cpu_reader.read_line(&mut line)?;
-    cpu_stats.parse(line.as_str());
-    println!("user: {}, nice: {}", cpu_stats.user, cpu_stats.idle,);
+    let mem_stats = MemoryStats::fetch()?;
+    println!("total: {}", mem_stats.total_memory);
+    let cpu_stats = CPUStats::fetch()?;
+    println!("user: {}, nice: {}", cpu_stats.user, cpu_stats.nice);
     Ok(())
 }
